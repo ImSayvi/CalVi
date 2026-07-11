@@ -1,12 +1,15 @@
 package com.calvi.ui;
-
 import java.time.LocalDate;
+import java.time.Month;
 import java.time.YearMonth;
-
+import java.time.format.TextStyle;
+import java.util.Locale;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
@@ -25,13 +28,15 @@ public class MonthView extends GridPane {
         fullWidth.setPercentWidth(100);
         getColumnConstraints().add(fullWidth);
 
+        //tu buduję samo miejsce na wiersza (nawigacja, nazwy dni, klocki mieisąca)
         RowConstraints headerRow = new RowConstraints();
         RowConstraints daysRow = new RowConstraints();
+        RowConstraints navRow = new RowConstraints();
         daysRow.setVgrow(Priority.ALWAYS);
-        getRowConstraints().addAll(headerRow, daysRow);
+        getRowConstraints().addAll(navRow, headerRow, daysRow);
 
-        add(buildHeader(), 0, 0);
-        add(buildDays(), 0, 1);
+        //a tu wypełniam  to miejsce treścią
+        refresh();
     }
 
     private GridPane buildHeader(){
@@ -52,11 +57,16 @@ public class MonthView extends GridPane {
         return header;
     }
 
+
     private GridPane buildDays(){
         LocalDate firstOfMonth = currentMonth.atDay(1);
         int startCol = firstOfMonth.getDayOfWeek().getValue() - 1; //na której kol wypada pierwszy dzień mieisąca; odejmuję 1 bo getvalue liczy od 1 a grid pane od 0
         int daysInMonth = currentMonth.lengthOfMonth();
         int prevMonthLength = currentMonth.minusMonths(1).lengthOfMonth();
+
+        LocalDate today = LocalDate.now();
+        int todaysDay = today.getDayOfMonth();
+        boolean isCurrentMonthShown = currentMonth.equals(YearMonth.from(today));
 
         GridPane monthGrid = new GridPane();
         addEqualColumns(monthGrid);
@@ -72,16 +82,13 @@ public class MonthView extends GridPane {
             int dayNumber;
             boolean inCurrentMonth;
 
-            if (index < startCol) {
-                // dni z końca poprzedniego miesiąca, wypełniające puste miejsce przed 1. dniem
+            if (index < startCol) { // dni z końca poprzedniego miesiąca, wypełniające puste miejsce przed 1. dniem
                 dayNumber = prevMonthLength - startCol + 1 + index;
                 inCurrentMonth = false;
-            } else if (index < startCol + daysInMonth) {
-                // prawdziwe dni aktualnego miesiąca
+            } else if (index < startCol + daysInMonth) { // prawdziwe dni aktualnego miesiąca
                 dayNumber = index - startCol + 1;
                 inCurrentMonth = true;
-            } else {
-                // dni z początku następnego miesiąca, dopełniające ostatni tydzień
+            } else { // dni z początku następnego miesiąca, dopełniające ostatni tydzień
                 dayNumber = index - startCol - daysInMonth + 1;
                 inCurrentMonth = false;
             }
@@ -95,6 +102,12 @@ public class MonthView extends GridPane {
             dayNum.setFont(Font.font("Arial", 14));
             if (!inCurrentMonth) {
                 dayNum.setStyle("-fx-text-fill: #bbbbbb;");
+            }
+
+
+
+            if(inCurrentMonth && isCurrentMonthShown && dayNumber == todaysDay){
+                dayBox.setStyle("-fx-background-color: #f5eeef;");
             }
             dayBox.getChildren().add(dayNum);
 
@@ -119,5 +132,53 @@ public class MonthView extends GridPane {
             row.setVgrow(Priority.ALWAYS);
             grid.getRowConstraints().add(row);
         }
+    }
+
+    private void refresh(){
+        getChildren().clear();
+        add(buildNavBar(), 0, 0);
+        add(buildHeader(), 0, 1);
+        add(buildDays(), 0, 2);
+    }
+
+    private BorderPane buildNavBar(){
+        BorderPane navBar = new BorderPane();
+
+        Button prevButton = new Button("<");
+        Button nextButton = new Button(">");
+        Button actualMonth = new Button(formatMonthLabel());
+
+        navBar.setLeft(prevButton);
+        navBar.setRight(nextButton);
+        navBar.setCenter(actualMonth);
+
+        BorderPane.setAlignment(actualMonth, Pos.CENTER);
+
+        prevButton.setOnAction(event-> {
+            currentMonth = currentMonth.minusMonths(1);
+            refresh();
+        });
+
+        nextButton.setOnAction(event -> {
+            currentMonth = currentMonth.plusMonths(1);
+            refresh();
+        });
+
+        actualMonth.setOnAction(event->{
+            this.currentMonth = YearMonth.now();
+            refresh();
+        });
+
+        return navBar;
+    }
+
+    private String formatMonthLabel(){
+        Month month = currentMonth.getMonth();
+        String formatedMonth = month.getDisplayName(TextStyle.FULL, new Locale("pl"));
+
+        String firstLetter = formatedMonth.substring(0,1);
+        String prettyName = firstLetter.toUpperCase() + formatedMonth.substring(1, formatedMonth.length());
+
+        return prettyName + " " + currentMonth.getYear();
     }
 }
