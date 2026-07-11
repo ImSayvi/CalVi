@@ -6,18 +6,11 @@ import javafx.scene.layout.VBox;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Priority;
 
-import com.calvi.model.Note;
-import com.calvi.model.Task;
 import com.calvi.ui.*;
 
 
 public class Main extends Application{
     public static void main(String[] args) {
-        Task test = new Task("Test title", null, null, "test desc", null, null);
-        Note testNote = new Note("testowa notataka", "test 123");
-
-        System.out.println(test);
-        System.out.println(testNote);
         launch(args);
     }
 

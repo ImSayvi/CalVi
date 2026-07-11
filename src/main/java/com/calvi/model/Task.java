@@ -36,7 +36,7 @@ public class Task {
         return desc;
     }
 
-    public Boolean isDone() {
+    public boolean isDone() {
         return done;
     }
 
@@ -60,7 +60,7 @@ public class Task {
         return type;
     }
 
-    public void setDone(Boolean done) {
+    public void setDone(boolean done) {
         this.done = done;
     }
 
@@ -73,7 +73,7 @@ public class Task {
             "time = " + time + "\n" +
             "desc = " + desc + "\n" +
             "done = " + done + "\n" +
-            "duration = " + duration +
+            "duration = " + duration + "\n" +
             "type = " + type + "\n";
     }
 }
