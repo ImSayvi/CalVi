@@ -8,7 +8,7 @@ public class Note {
     private String title;
     private String content;
     private LocalDateTime createdAt;
-    private Integer priority;
+    private NotePriority priority;
 
     public Note(String title, String content){
         this.id = UUID.randomUUID();
@@ -34,7 +34,7 @@ public class Note {
         return title;
     }
 
-    public int getPriority() {
+    public NotePriority getPriority() {
         return priority;
     }
 
@@ -46,7 +46,7 @@ public class Note {
         this.title = title;
     }
 
-    public void setPriority(int priority) {
+    public void setPriority(NotePriority priority) {
         this.priority = priority;
     }
 
