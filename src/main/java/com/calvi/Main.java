@@ -1,10 +1,14 @@
 package com.calvi;
+
 import javafx.application.Application;
 import javafx.stage.Stage;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
 
-import com.calvi.ui.*;
+import com.calvi.ui.DayView;
+import com.calvi.ui.MonthView;
+import com.calvi.ui.NotesView;
+import com.calvi.ui.WeekView;
 
 
 public class Main extends Application{
@@ -22,6 +26,9 @@ public class Main extends Application{
         DayView dayPane = new DayView();
         NotesView notesPane = new NotesView();
         WeekView weekPane = new WeekView();
+
+        monthsPane.setOnDaySelected(date -> dayPane.showDate(date));
+        weekPane.setOnDaySelected(date -> dayPane.showDate(date));
 
         stage.setScene(scene);
 

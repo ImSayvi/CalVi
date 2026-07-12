@@ -4,6 +4,8 @@ import java.time.Month;
 import java.time.YearMonth;
 import java.time.format.TextStyle;
 import java.util.Locale;
+import java.util.function.Consumer;
+
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -20,6 +22,7 @@ import javafx.scene.text.FontWeight;
 
 public class MonthView extends GridPane {
     private YearMonth currentMonth = YearMonth.now();
+    private Consumer<LocalDate> onDaySelected;
 
     public MonthView(){
         setStyle("-fx-background-color: white; -fx-border-color: #cccccc;");
@@ -37,6 +40,10 @@ public class MonthView extends GridPane {
 
         //a tu wypełniam  to miejsce treścią
         refresh();
+    }
+
+    public void setOnDaySelected(Consumer<LocalDate> onDaySelected) {
+        this.onDaySelected = onDaySelected;
     }
 
     private GridPane buildHeader(){
@@ -97,6 +104,20 @@ public class MonthView extends GridPane {
             dayBox.setAlignment(Pos.TOP_CENTER);
             dayBox.setPadding(new Insets(6));
             dayBox.setStyle("-fx-border-color: lightgray;");
+
+
+            //tu robię że kafelki reagują na klikniecie (tylko dla dni należących do currentMonth -
+            //dla dni z sąsiednich miesięcy currentMonth.atDay(dayNumber) mógłby rzucić wyjątek,
+            //bo dayNumber odnosi się wtedy do innego miesiąca niż currentMonth)
+            if (inCurrentMonth) {
+                LocalDate cellDate = currentMonth.atDay(dayNumber);
+                dayBox.setOnMouseClicked(event-> {
+                    if (onDaySelected != null){
+                        onDaySelected.accept(cellDate);
+                    }
+                });
+            }
+
 
             Label dayNum = new Label(String.valueOf(dayNumber));
             dayNum.setFont(Font.font("Arial", 14));

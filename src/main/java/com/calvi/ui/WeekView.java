@@ -6,6 +6,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Locale;
+import java.util.function.Consumer;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -21,6 +22,7 @@ import javafx.scene.text.FontWeight;
 
 public class WeekView extends BorderPane {
     private LocalDate weekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+    private Consumer<LocalDate> onDaySelected;
 
     public WeekView(){
         setPrefHeight(280);
@@ -30,6 +32,10 @@ public class WeekView extends BorderPane {
     private void refresh(){
         setTop(buildNavBar());
         setCenter(buildDaysRow());
+    }
+
+    public void setOnDaySelected(Consumer<LocalDate> onDaySelected) {
+        this.onDaySelected = onDaySelected;
     }
 
     private BorderPane buildNavBar(){
@@ -81,6 +87,14 @@ public class WeekView extends BorderPane {
             dayBox.setStyle(day.equals(today)
                     ? "-fx-border-color: lightgray; -fx-background-color: #f5eeef;"
                     : "-fx-border-color: lightgray;");
+
+            LocalDate cellDate = weekStart.plusDays(i);
+            dayBox.setOnMouseClicked(event->{
+                    if(onDaySelected != null){
+                        onDaySelected.accept(cellDate);
+                    }
+                }
+            );        
 
             Label weekLabel = new Label(prettyDayOfWeekName);
             weekLabel.setFont(Font.font("Arial", FontWeight.BOLD, 14));
