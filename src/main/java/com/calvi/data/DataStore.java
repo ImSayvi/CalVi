@@ -14,8 +14,8 @@ public class DataStore {
         new File("data").mkdirs();
 
         ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        mapper.enable(SerializationFeature.INDENT_OUTPUT);
+        mapper.registerModule(new JavaTimeModule()); //żeby priogram wiedział jak daty do jsona zapisać
+        mapper.enable(SerializationFeature.INDENT_OUTPUT); //wcięcia w jsonie
 
         mapper.writeValue(new File(FILE_PATH), data);
     }

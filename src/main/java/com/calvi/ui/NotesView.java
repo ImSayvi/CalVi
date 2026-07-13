@@ -23,15 +23,18 @@ import javafx.scene.text.FontWeight;
 
 
 public class NotesView extends VBox {
-    private List<Note> notes = new ArrayList<>();
+    private List<Note> notes;
     private GridPane notesList;
     private VBox formBox;
     private TextField titleField;
     private TextArea contentArea;
     private ComboBox<NotePriority> priorityBox;
     private TextField searchField;
+    private Runnable onDataChanged;
 
-    public NotesView() {
+    public NotesView(List<Note> notes) {
+        this.notes = notes;
+
         setAlignment(Pos.TOP_LEFT);
         setSpacing(6);
         setPadding(new Insets(12));
@@ -83,6 +86,9 @@ public class NotesView extends VBox {
                 notes.add(newNote);
                 closeForm();
                 refreshList();
+                if (onDataChanged != null) {
+                    onDataChanged.run();
+                }
             }
         });
 
@@ -96,6 +102,10 @@ public class NotesView extends VBox {
         getChildren().addAll(topBar, formBox, notesList);
 
         refreshList();
+    }
+
+    public void setOnDataChanged(Runnable onDataChanged) {
+        this.onDataChanged = onDataChanged;
     }
 
     private void closeForm(){
