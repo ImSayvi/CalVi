@@ -10,6 +10,10 @@ public class Note {
     private LocalDateTime createdAt;
     private NotePriority priority;
 
+    public Note() {
+        // potrzebne Jacksonowi do stworzenia obiektu przy wczytywaniu z JSON-a, przed ustawieniem pól przez settery
+    }
+
     public Note(String title, String content){
         this.id = UUID.randomUUID();
         this.title = title;
@@ -44,6 +48,14 @@ public class Note {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     public void setPriority(NotePriority priority) {
