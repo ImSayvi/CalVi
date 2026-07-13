@@ -7,11 +7,13 @@ import com.calvi.model.NotePriority;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -23,14 +25,19 @@ import javafx.scene.text.FontWeight;
 
 
 public class NotesView extends VBox {
+    private static final int PREVIEW_LENGTH = 60;
+
     private List<Note> notes;
+    private VBox listScreen;
     private GridPane notesList;
     private VBox formBox;
+    private VBox detailBox;
     private TextField titleField;
     private TextArea contentArea;
     private ComboBox<NotePriority> priorityBox;
     private TextField searchField;
     private Runnable onDataChanged;
+    private Note editingNote;
 
     public NotesView(List<Note> notes) {
         this.notes = notes;
@@ -43,8 +50,11 @@ public class NotesView extends VBox {
 
         Button toggleAddButton = new Button("+ Dodaj notatkę");
         toggleAddButton.setOnAction(event -> {
-            formBox.setVisible(true);
-            formBox.setManaged(true);
+            editingNote = null;
+            titleField.clear();
+            contentArea.clear();
+            priorityBox.setValue(null);
+            showOnly(formBox);
         });
 
         searchField = new TextField();
@@ -70,50 +80,128 @@ public class NotesView extends VBox {
         Button cancelButton = new Button("Anuluj");
 
         HBox buttonsBox = new HBox();
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        buttonsBox.getChildren().addAll(addButton, spacer, cancelButton);
+        Region formSpacer = new Region();
+        HBox.setHgrow(formSpacer, Priority.ALWAYS);
+        buttonsBox.getChildren().addAll(addButton, formSpacer, cancelButton);
 
         formBox = new VBox(6);
         formBox.getChildren().addAll(titleField, contentArea, priorityBox, buttonsBox);
-        formBox.setVisible(false);
-        formBox.setManaged(false);
 
         addButton.setOnAction(event -> {
             if (!titleField.getText().isBlank()){
-                Note newNote = new Note(titleField.getText(), contentArea.getText());
-                newNote.setPriority(priorityBox.getValue());
-                notes.add(newNote);
-                closeForm();
-                refreshList();
+                if (editingNote != null) {
+                    editingNote.setTitle(titleField.getText());
+                    editingNote.setContent(contentArea.getText());
+                    editingNote.setPriority(priorityBox.getValue());
+                } else {
+                    Note newNote = new Note(titleField.getText(), contentArea.getText());
+                    newNote.setPriority(priorityBox.getValue());
+                    notes.add(newNote);
+                }
+                editingNote = null;
+                showListScreen();
                 if (onDataChanged != null) {
                     onDataChanged.run();
                 }
             }
         });
 
-        cancelButton.setOnAction(event -> closeForm());
+        cancelButton.setOnAction(event -> {
+            editingNote = null;
+            showListScreen();
+        });
 
         notesList = new GridPane();
         addEqualColumns(notesList, 2);
         notesList.setHgap(8);
         notesList.setVgap(8);
 
-        getChildren().addAll(topBar, formBox, notesList);
+        listScreen = new VBox(6);
+        listScreen.getChildren().addAll(topBar, notesList);
 
-        refreshList();
+        detailBox = new VBox(10);
+
+        getChildren().addAll(listScreen, formBox, detailBox);
+
+        showListScreen();
     }
 
     public void setOnDataChanged(Runnable onDataChanged) {
         this.onDataChanged = onDataChanged;
     }
 
-    private void closeForm(){
-        titleField.clear();
-        contentArea.clear();
-        priorityBox.setValue(null);
-        formBox.setVisible(false);
-        formBox.setManaged(false);
+    private void showOnly(Node screenToShow){
+        listScreen.setVisible(screenToShow == listScreen);
+        listScreen.setManaged(screenToShow == listScreen);
+        formBox.setVisible(screenToShow == formBox);
+        formBox.setManaged(screenToShow == formBox);
+        detailBox.setVisible(screenToShow == detailBox);
+        detailBox.setManaged(screenToShow == detailBox);
+    }
+
+    private void showListScreen(){
+        refreshList();
+        showOnly(listScreen);
+    }
+
+    private void openFormForEdit(Note note) {
+        editingNote = note;
+        titleField.setText(note.getTitle());
+        contentArea.setText(note.getContent());
+        priorityBox.setValue(note.getPriority());
+        showOnly(formBox);
+    }
+
+    private void showDetail(Note note){
+        detailBox.getChildren().clear();
+        detailBox.setPadding(new Insets(8));
+        detailBox.setStyle("-fx-background-color: " + colorForPriority(note.getPriority()) + ";");
+
+        Label titleLabel = new Label(note.getTitle());
+        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+
+        Button deleteButton = new Button("✕");
+        deleteButton.setTooltip(new Tooltip("Usuń"));
+        deleteButton.setStyle(
+                "-fx-background-color: #e74c3c;" +
+                "-fx-text-fill: white;" +
+                "-fx-background-radius: 50%;" +
+                "-fx-min-width: 22px; -fx-min-height: 22px;" +
+                "-fx-max-width: 22px; -fx-max-height: 22px;" +
+                "-fx-padding: 0;" +
+                "-fx-font-size: 11px;" +
+                "-fx-cursor: hand;"
+        );
+        deleteButton.setOnAction(event -> {
+            notes.remove(note);
+            showListScreen();
+            if (onDataChanged != null) {
+                onDataChanged.run();
+            }
+        });
+
+        Region headerSpacer = new Region();
+        HBox.setHgrow(headerSpacer, Priority.ALWAYS);
+        HBox headerRow = new HBox(titleLabel, headerSpacer, deleteButton);
+        headerRow.setAlignment(Pos.CENTER_LEFT);
+
+        Label dateLabel = new Label(note.getCreatedAt().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")));
+        dateLabel.setStyle("-fx-text-fill: #888888;");
+
+        Label contentLabel = new Label(note.getContent());
+        contentLabel.setWrapText(true);
+        VBox.setVgrow(contentLabel, Priority.ALWAYS);
+
+        Button backButton = new Button("Wróć");
+        backButton.setOnAction(event -> showListScreen());
+
+        Button editButton = new Button("Edytuj");
+        editButton.setOnAction(event -> openFormForEdit(note));
+
+        HBox actionsRow = new HBox(6, backButton, editButton);
+
+        detailBox.getChildren().addAll(headerRow, dateLabel, contentLabel, actionsRow);
+        showOnly(detailBox);
     }
 
     private void refreshList(){
@@ -122,7 +210,7 @@ public class NotesView extends VBox {
         String query = searchField.getText().trim().toLowerCase();
 
         List<Note> matchingNotes = new ArrayList<>();
-        for (Note note : notes){ //dla każdego Note w notes sprawdź, czy pasuje do wyszukiwania
+        for (Note note : notes){ //dla każdego Note w notes sprawdź, czy pasuje do wyszukiwania (po pełnej treści, nie skróconej)
             String dateText = note.getCreatedAt().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"));
             boolean matches = query.isEmpty()
                     || note.getTitle().toLowerCase().contains(query)
@@ -149,11 +237,12 @@ public class NotesView extends VBox {
             noteBox.setSpacing(4);
             noteBox.setPadding(new Insets(8));
             noteBox.setStyle("-fx-border-color: lightgray; -fx-background-color: " + colorForPriority(note.getPriority()) + ";");
+            noteBox.setOnMouseClicked(event -> showDetail(note));
 
             Label titleLabel = new Label(note.getTitle());
             titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 13));
 
-            Label contentLabel = new Label(note.getContent());
+            Label contentLabel = new Label(truncate(note.getContent(), PREVIEW_LENGTH));
             contentLabel.setFont(Font.font("Arial", 11));
             contentLabel.setWrapText(true);
 
@@ -164,6 +253,13 @@ public class NotesView extends VBox {
             noteBox.getChildren().addAll(titleLabel, contentLabel, dateLabel);
             notesList.add(noteBox, col, row);
         }
+    }
+
+    private String truncate(String text, int maxLength){
+        if (text.length() <= maxLength) {
+            return text;
+        }
+        return text.substring(0, maxLength) + "...";
     }
 
     private String colorForPriority(NotePriority priority){
