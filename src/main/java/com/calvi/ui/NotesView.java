@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import com.calvi.model.Note;
 import com.calvi.model.NotePriority;
-
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;

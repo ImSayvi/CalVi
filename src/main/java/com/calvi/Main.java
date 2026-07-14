@@ -36,7 +36,7 @@ public class Main extends Application{
         Scene scene = new Scene(root, 1200, 800);
 
         MonthView monthsPane = new MonthView();
-        DayView dayPane = new DayView();
+        DayView dayPane = new DayView(appData.getTasks());
         NotesView notesPane = new NotesView(appData.getNotes());
         WeekView weekPane = new WeekView();
 
@@ -44,6 +44,14 @@ public class Main extends Application{
         weekPane.setOnDaySelected(date -> dayPane.showDate(date));
 
         notesPane.setOnDataChanged(() -> {
+            try {
+                DataStore.save(appData);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+
+        dayPane.setOnDataChanged(() -> {
             try {
                 DataStore.save(appData);
             } catch (IOException e) {

@@ -18,6 +18,10 @@ public class Task {
 
     //duration - nie jest wymagane, ale jego brak nie będzie z góry zakładał, że to wydarzenie;
 
+    public Task() {
+        // potrzebne Jacksonowi do stworzenia obiektu przy wczytywaniu z JSON-a, przed ustawieniem pól przez settery
+    }
+
     public Task(String title, LocalDate date, LocalTime time, String desc, Duration duration, EntryType type) {
         this.id = UUID.randomUUID();
         this.title = title;
@@ -62,6 +66,34 @@ public class Task {
 
     public void setDone(boolean done) {
         this.done = done;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public void setDate(LocalDate date) {
+        this.date = date;
+    }
+
+    public void setTime(LocalTime time) {
+        this.time = time;
+    }
+
+    public void setDesc(String desc) {
+        this.desc = desc;
+    }
+
+    public void setDuration(Duration duration) {
+        this.duration = duration;
+    }
+
+    public void setType(EntryType type) {
+        this.type = type;
     }
 
     @Override
