@@ -11,6 +11,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
@@ -116,8 +117,14 @@ public class NotesView extends VBox {
         notesList.setHgap(8);
         notesList.setVgap(8);
 
+        ScrollPane notesScrollPane = new ScrollPane(notesList);
+        notesScrollPane.setFitToWidth(true);
+        notesScrollPane.setStyle("-fx-background-color: transparent;");
+        VBox.setVgrow(notesScrollPane, Priority.ALWAYS);
+
         listScreen = new VBox(6);
-        listScreen.getChildren().addAll(topBar, notesList);
+        listScreen.getChildren().addAll(topBar, notesScrollPane);
+        VBox.setVgrow(listScreen, Priority.ALWAYS);
 
         detailBox = new VBox(10);
 
