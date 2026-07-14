@@ -14,6 +14,9 @@ public class Task {
     private boolean done = false;
     private Duration duration;
     private EntryType type;
+    private TaskColor color;
+    private LocalDate deadline; //dla tasków
+    private LocalDate endDate; //dla eventów
 
 
     //duration - nie jest wymagane, ale jego brak nie będzie z góry zakładał, że to wydarzenie;
@@ -64,6 +67,18 @@ public class Task {
         return type;
     }
 
+    public TaskColor getColor() {
+        return color;
+    }
+
+    public LocalDate getDeadline() {
+        return deadline;
+    }
+
+    public LocalDate getEndDate() {
+        return endDate;
+    }
+
     public void setDone(boolean done) {
         this.done = done;
     }
@@ -94,6 +109,18 @@ public class Task {
 
     public void setType(EntryType type) {
         this.type = type;
+    }
+
+    public void setColor(TaskColor color) {
+        this.color = color;
+    }
+
+    public void setDeadline(LocalDate deadline) {
+        this.deadline = deadline;
+    }
+
+    public void setEndDate(LocalDate endDate) {
+        this.endDate = endDate;
     }
 
     @Override
