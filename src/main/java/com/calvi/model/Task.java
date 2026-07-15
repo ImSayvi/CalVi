@@ -155,6 +155,14 @@ public class Task {
         return date.equals(day);
     }
 
+    public boolean isDeadlineClose(){
+        // "blisko terminu": dziś, jutro, albo termin już minął, a zadanie wciąż nieukończone
+        if (type != EntryType.TASK || deadline == null || done) {
+            return false;
+        }
+        return !deadline.isAfter(LocalDate.now().plusDays(1));
+    }
+
     @Override
     public String toString() {
     return "Task\n" +

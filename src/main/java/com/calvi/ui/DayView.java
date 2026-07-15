@@ -51,6 +51,7 @@ public class DayView extends VBox {
     private Spinner<Integer> eventEndHourSpinner;
     private Spinner<Integer> eventEndMinuteSpinner;
     private VBox eventStartRow;
+    private VBox addTaskBox;
     private Button addTaskButton;
     private Runnable onDataChanged;
 
@@ -147,6 +148,15 @@ public class DayView extends VBox {
             taskDatePicker.setPromptText(isEvent ? "Data zakończenia" : "Termin");
             eventStartRow.setVisible(isEvent);
             eventStartRow.setManaged(isEvent);
+            if (isEvent) {
+                // domyślnie data rozpoczęcia i zakończenia wydarzenia to dzień, który akurat przeglądamy
+                if (eventStartDatePicker.getValue() == null) {
+                    eventStartDatePicker.setValue(shownDate);
+                }
+                if (taskDatePicker.getValue() == null) {
+                    taskDatePicker.setValue(shownDate);
+                }
+            }
         });
 
         addTaskButton = new Button("Dodaj");
@@ -200,11 +210,20 @@ public class DayView extends VBox {
 
         HBox typeAndColorRow = new HBox(10, taskTypeBox, taskColorBox);
 
-        VBox addTaskBox = new VBox(8, taskTitleField, typeAndColorRow, eventStartRow, taskDatePicker, formButtonsRow);
+        addTaskBox = new VBox(8, taskTitleField, typeAndColorRow, eventStartRow, taskDatePicker, formButtonsRow);
         addTaskBox.setPadding(new Insets(8));
         addTaskBox.setStyle("-fx-background-color: #f7f7f7; -fx-border-color: #dddddd;");
+        addTaskBox.setVisible(false);
+        addTaskBox.setManaged(false);
 
-        getChildren().addAll(dayNameLabel, dateLabel, new Separator(), taskListBox, new Separator(), addTaskBox);
+        Button toggleAddTaskButton = new Button("+ Dodaj zadanie");
+        toggleAddTaskButton.setOnAction(event -> {
+            resetTaskForm();
+            addTaskBox.setVisible(true);
+            addTaskBox.setManaged(true);
+        });
+
+        getChildren().addAll(dayNameLabel, dateLabel, new Separator(), taskListBox, new Separator(), toggleAddTaskButton, addTaskBox);
         showDate(LocalDate.now());
     }
 
@@ -260,7 +279,7 @@ public class DayView extends VBox {
         }
     }
 
-    private void closeTaskForm(){
+    private void resetTaskForm(){
         editingTask = null;
         taskTitleField.clear();
         taskTypeBox.setValue(EntryType.TASK);
@@ -277,6 +296,12 @@ public class DayView extends VBox {
         eventEndHourSpinner.getValueFactory().setValue(13);
         eventEndMinuteSpinner.getValueFactory().setValue(0);
         addTaskButton.setText("Dodaj");
+    }
+
+    private void closeTaskForm(){
+        resetTaskForm();
+        addTaskBox.setVisible(false);
+        addTaskBox.setManaged(false);
     }
 
     private void openTaskForEdit(Task task){
@@ -304,6 +329,8 @@ public class DayView extends VBox {
             eventEndMinuteSpinner.getValueFactory().setValue(endTimeValue.getMinute());
         }
         addTaskButton.setText("Zapisz");
+        addTaskBox.setVisible(true);
+        addTaskBox.setManaged(true);
     }
 
     public void setOnDataChanged(Runnable onDataChanged) {
@@ -377,6 +404,20 @@ public class DayView extends VBox {
                 taskLabel.setFill(Color.web("#999999"));
             }
 
+            Text deadlineLabel = null;
+            if (task.getType() == EntryType.TASK && task.getDeadline() != null) {
+                boolean isClose = task.isDeadlineClose();
+                String deadlineStr = task.getDeadline().format(DateTimeFormatter.ofPattern("dd.MM"));
+                deadlineLabel = new Text(isClose ? " ❗ " + deadlineStr : " (termin: " + deadlineStr + ")");
+                deadlineLabel.setFont(Font.font("Arial", 10));
+                if (isClose) {
+                    deadlineLabel.setFill(Color.web("#e74c3c"));
+                    deadlineLabel.setStyle("-fx-font-weight: bold;");
+                } else {
+                    deadlineLabel.setFill(Color.web("#888888"));
+                }
+            }
+
             Region rowSpacer = new Region();
             HBox.setHgrow(rowSpacer, Priority.ALWAYS);
 
@@ -400,7 +441,11 @@ public class DayView extends VBox {
                 }
             });
 
-            taskRow.getChildren().addAll(taskLabel, rowSpacer, deleteButton);
+            taskRow.getChildren().add(taskLabel);
+            if (deadlineLabel != null) {
+                taskRow.getChildren().add(deadlineLabel);
+            }
+            taskRow.getChildren().addAll(rowSpacer, deleteButton);
             taskListBox.getChildren().add(taskRow);
         }
     }

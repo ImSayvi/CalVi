@@ -22,6 +22,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.RowConstraints;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
@@ -130,10 +131,17 @@ public class MonthView extends GridPane {
 
                 for (Task task : tasks) { //dla każdego Task sprawdź, czy dotyczy tego konkretnego dnia
                     if (task.appliesToDate(cellDate)) {
-                        Text chipText = new Text(truncate(task.getTitle(), TASK_CHIP_LENGTH));
+                        boolean isDeadlineClose = task.isDeadlineClose();
+                        String chipTitle = truncate(task.getTitle(), TASK_CHIP_LENGTH);
+
+                        Text chipText = new Text(isDeadlineClose ? "❗ " + chipTitle : chipTitle);
                         chipText.setFont(Font.font("Arial", 9));
                         if (task.isDone()) {
                             chipText.setStrikethrough(true);
+                        }
+                        if (isDeadlineClose) {
+                            chipText.setFill(Color.web("#e74c3c"));
+                            chipText.setStyle("-fx-font-weight: bold;");
                         }
 
                         StackPane chip = new StackPane(chipText);
