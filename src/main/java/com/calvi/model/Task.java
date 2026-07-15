@@ -5,6 +5,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class Task {
     private UUID id;
     private String title;
@@ -155,6 +157,7 @@ public class Task {
         return date.equals(day);
     }
 
+    @JsonIgnore
     public boolean isDeadlineClose(){
         // "blisko terminu": dziś, jutro, albo termin już minął, a zadanie wciąż nieukończone
         if (type != EntryType.TASK || deadline == null || done) {
