@@ -196,7 +196,7 @@ public class DayView extends VBox {
 
         List<Task> tasksForDay = new ArrayList<>();
         for (Task task : tasks) { //dla każdego Task w tasks sprawdź, czy należy do wyświetlanego dnia
-            if (appliesToDate(task, shownDate)) {
+            if (task.appliesToDate(shownDate)) {
                 tasksForDay.add(task);
             }
         }
@@ -257,29 +257,6 @@ public class DayView extends VBox {
             taskRow.getChildren().addAll(taskLabel, rowSpacer, deleteButton);
             taskListBox.getChildren().add(taskRow);
         }
-    }
-
-    private boolean appliesToDate(Task task, LocalDate day){
-        if (task.getType() == EntryType.EVENT && task.getEndDate() != null) {
-            // wydarzenie z zakresem dat "rozciąga się" - widoczne na każdym dniu od date do endDate
-            return !day.isBefore(task.getDate()) && !day.isAfter(task.getEndDate());
-        }
-
-        if (task.getType() == EntryType.TASK && !task.isDone()) {
-            // każde niedokończone zadanie "goni" dzisiejszą datę; deadline (jeśli jest) je zatrzymuje na miejscu,
-            // brak deadline'u = goni bez ograniczenia, aż do oznaczenia jako ukończone
-            LocalDate today = LocalDate.now();
-            LocalDate effectiveDate = today;
-            if (effectiveDate.isBefore(task.getDate())) {
-                effectiveDate = task.getDate();
-            }
-            if (task.getDeadline() != null && effectiveDate.isAfter(task.getDeadline())) {
-                effectiveDate = task.getDeadline();
-            }
-            return day.equals(effectiveDate);
-        }
-
-        return task.getDate().equals(day);
     }
 
     private String colorForTaskColor(TaskColor color){

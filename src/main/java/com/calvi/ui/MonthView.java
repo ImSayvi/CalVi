@@ -3,8 +3,12 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.time.YearMonth;
 import java.time.format.TextStyle;
+import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
+
+import com.calvi.model.Task;
+import com.calvi.model.TaskColor;
 
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
@@ -21,10 +25,15 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
 public class MonthView extends GridPane {
+    private static final int TASK_CHIP_LENGTH = 8;
+
     private YearMonth currentMonth = YearMonth.now();
+    private List<Task> tasks;
     private Consumer<LocalDate> onDaySelected;
 
-    public MonthView(){
+    public MonthView(List<Task> tasks){
+        this.tasks = tasks;
+
         setStyle("-fx-background-color: white; -fx-border-color: #cccccc;");
 
         ColumnConstraints fullWidth = new ColumnConstraints();
@@ -116,6 +125,20 @@ public class MonthView extends GridPane {
                         onDaySelected.accept(cellDate);
                     }
                 });
+
+                for (Task task : tasks) { //dla każdego Task sprawdź, czy dotyczy tego konkretnego dnia
+                    if (task.appliesToDate(cellDate)) {
+                        Label chip = new Label(truncate(task.getTitle(), TASK_CHIP_LENGTH));
+                        chip.setFont(Font.font("Arial", 9));
+                        chip.setMaxWidth(Double.MAX_VALUE);
+                        chip.setStyle(
+                                "-fx-background-color: " + colorForTaskColor(task.getColor()) + ";" +
+                                "-fx-background-radius: 3px;" +
+                                "-fx-padding: 1 3 1 3;"
+                        );
+                        dayBox.getChildren().add(chip);
+                    }
+                }
             }
 
 
@@ -130,12 +153,42 @@ public class MonthView extends GridPane {
             if(inCurrentMonth && isCurrentMonthShown && dayNumber == todaysDay){
                 dayBox.setStyle("-fx-background-color: #f5eeef;");
             }
-            dayBox.getChildren().add(dayNum);
+            dayBox.getChildren().add(0, dayNum);
 
             monthGrid.add(dayBox, col, row);
         }
 
         return monthGrid;
+    }
+
+    private String truncate(String text, int maxLength){
+        if (text.length() <= maxLength) {
+            return text;
+        }
+        return text.substring(0, maxLength) + "...";
+    }
+
+    private String colorForTaskColor(TaskColor color){
+        if (color == null) {
+            return "white";
+        }
+
+        switch (color) {
+            case RED:
+                return "#fde2e2";
+            case ORANGE:
+                return "#ffe4cc";
+            case YELLOW:
+                return "#fff3cd";
+            case GREEN:
+                return "#e2f0e2";
+            case BLUE:
+                return "#dce8fc";
+            case PURPLE:
+                return "#ecdcfc";
+            default:
+                return "white";
+        }
     }
 
     private void addEqualColumns(GridPane grid){
@@ -155,7 +208,7 @@ public class MonthView extends GridPane {
         }
     }
 
-    private void refresh(){
+    public void refresh(){
         getChildren().clear();
         add(buildNavBar(), 0, 0);
         add(buildHeader(), 0, 1);

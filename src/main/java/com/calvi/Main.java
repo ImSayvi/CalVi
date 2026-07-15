@@ -35,7 +35,7 @@ public class Main extends Application{
         BorderPane root = new BorderPane();
         Scene scene = new Scene(root, 1200, 800);
 
-        MonthView monthsPane = new MonthView();
+        MonthView monthsPane = new MonthView(appData.getTasks());
         DayView dayPane = new DayView(appData.getTasks());
         NotesView notesPane = new NotesView(appData.getNotes());
         WeekView weekPane = new WeekView();
@@ -57,6 +57,7 @@ public class Main extends Application{
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            monthsPane.refresh();
         });
 
         stage.setScene(scene);

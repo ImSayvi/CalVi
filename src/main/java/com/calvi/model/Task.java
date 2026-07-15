@@ -123,6 +123,29 @@ public class Task {
         this.endDate = endDate;
     }
 
+    public boolean appliesToDate(LocalDate day){
+        if (type == EntryType.EVENT && endDate != null) {
+            // wydarzenie z zakresem dat "rozciąga się" - widoczne na każdym dniu od date do endDate
+            return !day.isBefore(date) && !day.isAfter(endDate);
+        }
+
+        if (type == EntryType.TASK && !done) {
+            // każde niedokończone zadanie "goni" dzisiejszą datę; deadline (jeśli jest) je zatrzymuje na miejscu,
+            // brak deadline'u = goni bez ograniczenia, aż do oznaczenia jako ukończone
+            LocalDate today = LocalDate.now();
+            LocalDate effectiveDate = today;
+            if (effectiveDate.isBefore(date)) {
+                effectiveDate = date;
+            }
+            if (deadline != null && effectiveDate.isAfter(deadline)) {
+                effectiveDate = deadline;
+            }
+            return day.equals(effectiveDate);
+        }
+
+        return date.equals(day);
+    }
+
     @Override
     public String toString() {
     return "Task\n" +
