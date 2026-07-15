@@ -1,5 +1,6 @@
 package com.calvi.ui;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,14 +19,17 @@ import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.Separator;
+import javafx.scene.control.Spinner;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
 
 
 public class DayView extends VBox {
@@ -39,6 +43,10 @@ public class DayView extends VBox {
     private ComboBox<EntryType> taskTypeBox;
     private ComboBox<TaskColor> taskColorBox;
     private DatePicker taskDatePicker;
+    private DatePicker eventStartDatePicker;
+    private Spinner<Integer> eventStartHourSpinner;
+    private Spinner<Integer> eventStartMinuteSpinner;
+    private HBox eventStartRow;
     private Button addTaskButton;
     private Runnable onDataChanged;
 
@@ -78,21 +86,58 @@ public class DayView extends VBox {
         HBox.setHgrow(taskDatePicker, Priority.ALWAYS);
         taskDatePicker.setMaxWidth(Double.MAX_VALUE);
 
-        // etykieta w polu daty zmienia się w zależności od typu (deadline dla zadania, koniec zakresu dla wydarzenia)
+        eventStartDatePicker = new DatePicker();
+        eventStartDatePicker.setPromptText("Data rozpoczęcia");
+        HBox.setHgrow(eventStartDatePicker, Priority.ALWAYS);
+        eventStartDatePicker.setMaxWidth(Double.MAX_VALUE);
+
+        eventStartHourSpinner = new Spinner<>(0, 23, 12);
+        eventStartHourSpinner.setEditable(true);
+        eventStartHourSpinner.setPrefWidth(60);
+
+        eventStartMinuteSpinner = new Spinner<>(0, 59, 0, 5);
+        eventStartMinuteSpinner.setEditable(true);
+        eventStartMinuteSpinner.setPrefWidth(60);
+
+        eventStartRow = new HBox(6, eventStartDatePicker, eventStartHourSpinner, eventStartMinuteSpinner);
+        eventStartRow.setVisible(false);
+        eventStartRow.setManaged(false);
+
+        // etykieta w polu daty zmienia się w zależności od typu (deadline dla zadania, koniec zakresu dla wydarzenia),
+        // a pole daty/godziny rozpoczęcia pokazuje się tylko dla wydarzeń
         taskTypeBox.valueProperty().addListener((observable, oldValue, newValue) -> {
-            taskDatePicker.setPromptText(newValue == EntryType.EVENT ? "Data zakończenia" : "Termin");
+            boolean isEvent = newValue == EntryType.EVENT;
+            taskDatePicker.setPromptText(isEvent ? "Data zakończenia" : "Termin");
+            eventStartRow.setVisible(isEvent);
+            eventStartRow.setManaged(isEvent);
         });
 
         addTaskButton = new Button("Dodaj");
         addTaskButton.setOnAction(event -> {
             if (!taskTitleField.getText().isBlank()) {
+                boolean isEvent = taskTypeBox.getValue() == EntryType.EVENT;
+
                 if (editingTask != null) {
                     editingTask.setTitle(taskTitleField.getText());
                     editingTask.setType(taskTypeBox.getValue());
                     editingTask.setColor(taskColorBox.getValue());
+                    if (isEvent) {
+                        // tylko wydarzenie pozwala zmienić datę/godzinę rozpoczęcia -
+                        // dla zadania NIE ruszamy date/time, bo mogłoby to zepsuć "skaczący" termin
+                        LocalDate startDate = eventStartDatePicker.getValue() != null
+                                ? eventStartDatePicker.getValue() : editingTask.getDate();
+                        editingTask.setDate(startDate);
+                        editingTask.setTime(LocalTime.of(eventStartHourSpinner.getValue(), eventStartMinuteSpinner.getValue()));
+                    }
                     applyDatePickerToTask(editingTask);
                 } else {
-                    Task newTask = new Task(taskTitleField.getText(), shownDate, null, "", null, taskTypeBox.getValue());
+                    LocalDate startDate = shownDate;
+                    LocalTime startTime = null;
+                    if (isEvent) {
+                        startDate = eventStartDatePicker.getValue() != null ? eventStartDatePicker.getValue() : shownDate;
+                        startTime = LocalTime.of(eventStartHourSpinner.getValue(), eventStartMinuteSpinner.getValue());
+                    }
+                    Task newTask = new Task(taskTitleField.getText(), startDate, startTime, "", null, taskTypeBox.getValue());
                     newTask.setColor(taskColorBox.getValue());
                     applyDatePickerToTask(newTask);
                     tasks.add(newTask);
@@ -114,7 +159,7 @@ public class DayView extends VBox {
 
         HBox typeAndColorRow = new HBox(10, taskTypeBox, taskColorBox);
 
-        VBox addTaskBox = new VBox(8, taskTitleField, typeAndColorRow, taskDatePicker, formButtonsRow);
+        VBox addTaskBox = new VBox(8, taskTitleField, typeAndColorRow, eventStartRow, taskDatePicker, formButtonsRow);
         addTaskBox.setPadding(new Insets(8));
         addTaskBox.setStyle("-fx-background-color: #f7f7f7; -fx-border-color: #dddddd;");
 
@@ -161,6 +206,9 @@ public class DayView extends VBox {
         taskTypeBox.setValue(EntryType.TASK);
         taskColorBox.setValue(null);
         taskDatePicker.setValue(null);
+        eventStartDatePicker.setValue(null);
+        eventStartHourSpinner.getValueFactory().setValue(12);
+        eventStartMinuteSpinner.getValueFactory().setValue(0);
         addTaskButton.setText("Dodaj");
     }
 
@@ -170,6 +218,12 @@ public class DayView extends VBox {
         taskTypeBox.setValue(task.getType());
         taskColorBox.setValue(task.getColor());
         taskDatePicker.setValue(task.getType() == EntryType.EVENT ? task.getEndDate() : task.getDeadline());
+        if (task.getType() == EntryType.EVENT) {
+            eventStartDatePicker.setValue(task.getDate());
+            LocalTime time = task.getTime() != null ? task.getTime() : LocalTime.of(12, 0);
+            eventStartHourSpinner.getValueFactory().setValue(time.getHour());
+            eventStartMinuteSpinner.getValueFactory().setValue(time.getMinute());
+        }
         addTaskButton.setText("Zapisz");
     }
 
@@ -229,7 +283,11 @@ public class DayView extends VBox {
             }
 
             String prefix = task.getType() == EntryType.EVENT ? "★ " : "";
-            Label taskLabel = new Label(prefix + task.getTitle());
+            Text taskLabel = new Text(prefix + task.getTitle());
+            if (task.isDone()) {
+                taskLabel.setStrikethrough(true);
+                taskLabel.setFill(Color.web("#999999"));
+            }
 
             Region rowSpacer = new Region();
             HBox.setHgrow(rowSpacer, Priority.ALWAYS);

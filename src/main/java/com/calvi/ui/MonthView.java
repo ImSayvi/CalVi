@@ -20,9 +20,11 @@ import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.RowConstraints;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
 
 public class MonthView extends GridPane {
     private static final int TASK_CHIP_LENGTH = 8;
@@ -128,8 +130,13 @@ public class MonthView extends GridPane {
 
                 for (Task task : tasks) { //dla każdego Task sprawdź, czy dotyczy tego konkretnego dnia
                     if (task.appliesToDate(cellDate)) {
-                        Label chip = new Label(truncate(task.getTitle(), TASK_CHIP_LENGTH));
-                        chip.setFont(Font.font("Arial", 9));
+                        Text chipText = new Text(truncate(task.getTitle(), TASK_CHIP_LENGTH));
+                        chipText.setFont(Font.font("Arial", 9));
+                        if (task.isDone()) {
+                            chipText.setStrikethrough(true);
+                        }
+
+                        StackPane chip = new StackPane(chipText);
                         chip.setMaxWidth(Double.MAX_VALUE);
                         chip.setStyle(
                                 "-fx-background-color: " + colorForTaskColor(task.getColor()) + ";" +
