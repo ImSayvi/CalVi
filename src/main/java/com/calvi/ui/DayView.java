@@ -1,6 +1,7 @@
 package com.calvi.ui;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,9 +45,12 @@ public class DayView extends VBox {
     private ComboBox<TaskColor> taskColorBox;
     private DatePicker taskDatePicker;
     private DatePicker eventStartDatePicker;
+    private CheckBox eventHasTimeCheckBox;
     private Spinner<Integer> eventStartHourSpinner;
     private Spinner<Integer> eventStartMinuteSpinner;
-    private HBox eventStartRow;
+    private Spinner<Integer> eventEndHourSpinner;
+    private Spinner<Integer> eventEndMinuteSpinner;
+    private VBox eventStartRow;
     private Button addTaskButton;
     private Runnable onDataChanged;
 
@@ -91,15 +95,48 @@ public class DayView extends VBox {
         HBox.setHgrow(eventStartDatePicker, Priority.ALWAYS);
         eventStartDatePicker.setMaxWidth(Double.MAX_VALUE);
 
+        eventHasTimeCheckBox = new CheckBox("Podaj godzinę");
+
         eventStartHourSpinner = new Spinner<>(0, 23, 12);
         eventStartHourSpinner.setEditable(true);
-        eventStartHourSpinner.setPrefWidth(60);
+        eventStartHourSpinner.setPrefWidth(70);
 
         eventStartMinuteSpinner = new Spinner<>(0, 59, 0, 5);
         eventStartMinuteSpinner.setEditable(true);
-        eventStartMinuteSpinner.setPrefWidth(60);
+        eventStartMinuteSpinner.setPrefWidth(70);
 
-        eventStartRow = new HBox(6, eventStartDatePicker, eventStartHourSpinner, eventStartMinuteSpinner);
+        eventEndHourSpinner = new Spinner<>(0, 23, 13);
+        eventEndHourSpinner.setEditable(true);
+        eventEndHourSpinner.setPrefWidth(70);
+
+        eventEndMinuteSpinner = new Spinner<>(0, 59, 0, 5);
+        eventEndMinuteSpinner.setEditable(true);
+        eventEndMinuteSpinner.setPrefWidth(70);
+
+        // zmiana godziny rozpoczęcia sama podpowiada godzinę zakończenia (start + 1h)
+        eventStartHourSpinner.valueProperty().addListener((observable, oldValue, newValue) -> updateEventEndTimeDefault());
+        eventStartMinuteSpinner.valueProperty().addListener((observable, oldValue, newValue) -> updateEventEndTimeDefault());
+
+        // godzina jest opcjonalna - dopóki checkbox niezaznaczony, spinnery są nieaktywne i nieużywane przy zapisie
+        eventHasTimeCheckBox.setOnAction(event -> {
+            boolean hasTime = eventHasTimeCheckBox.isSelected();
+            eventStartHourSpinner.setDisable(!hasTime);
+            eventStartMinuteSpinner.setDisable(!hasTime);
+            eventEndHourSpinner.setDisable(!hasTime);
+            eventEndMinuteSpinner.setDisable(!hasTime);
+        });
+        eventStartHourSpinner.setDisable(true);
+        eventStartMinuteSpinner.setDisable(true);
+        eventEndHourSpinner.setDisable(true);
+        eventEndMinuteSpinner.setDisable(true);
+
+        HBox eventStartTimeRow = new HBox(6, new Label("Od:"), eventStartHourSpinner, eventStartMinuteSpinner);
+        eventStartTimeRow.setAlignment(Pos.CENTER_LEFT);
+
+        HBox eventEndTimeRow = new HBox(6, new Label("Do:"), eventEndHourSpinner, eventEndMinuteSpinner);
+        eventEndTimeRow.setAlignment(Pos.CENTER_LEFT);
+
+        eventStartRow = new VBox(4, eventStartDatePicker, eventHasTimeCheckBox, eventStartTimeRow, eventEndTimeRow);
         eventStartRow.setVisible(false);
         eventStartRow.setManaged(false);
 
@@ -127,17 +164,21 @@ public class DayView extends VBox {
                         LocalDate startDate = eventStartDatePicker.getValue() != null
                                 ? eventStartDatePicker.getValue() : editingTask.getDate();
                         editingTask.setDate(startDate);
-                        editingTask.setTime(LocalTime.of(eventStartHourSpinner.getValue(), eventStartMinuteSpinner.getValue()));
+                        editingTask.setTime(getSelectedStartTime());
+                        editingTask.setEndTime(getSelectedEndTime());
                     }
                     applyDatePickerToTask(editingTask);
                 } else {
                     LocalDate startDate = shownDate;
                     LocalTime startTime = null;
+                    LocalTime endTimeValue = null;
                     if (isEvent) {
                         startDate = eventStartDatePicker.getValue() != null ? eventStartDatePicker.getValue() : shownDate;
-                        startTime = LocalTime.of(eventStartHourSpinner.getValue(), eventStartMinuteSpinner.getValue());
+                        startTime = getSelectedStartTime();
+                        endTimeValue = getSelectedEndTime();
                     }
                     Task newTask = new Task(taskTitleField.getText(), startDate, startTime, "", null, taskTypeBox.getValue());
+                    newTask.setEndTime(endTimeValue);
                     newTask.setColor(taskColorBox.getValue());
                     applyDatePickerToTask(newTask);
                     tasks.add(newTask);
@@ -190,6 +231,25 @@ public class DayView extends VBox {
         };
     }
 
+    private LocalTime getSelectedStartTime(){
+        return eventHasTimeCheckBox.isSelected()
+                ? LocalTime.of(eventStartHourSpinner.getValue(), eventStartMinuteSpinner.getValue())
+                : null;
+    }
+
+    private LocalTime getSelectedEndTime(){
+        return eventHasTimeCheckBox.isSelected()
+                ? LocalTime.of(eventEndHourSpinner.getValue(), eventEndMinuteSpinner.getValue())
+                : null;
+    }
+
+    private void updateEventEndTimeDefault(){
+        LocalTime start = LocalTime.of(eventStartHourSpinner.getValue(), eventStartMinuteSpinner.getValue());
+        LocalTime end = start.plusHours(1);
+        eventEndHourSpinner.getValueFactory().setValue(end.getHour());
+        eventEndMinuteSpinner.getValueFactory().setValue(end.getMinute());
+    }
+
     private void applyDatePickerToTask(Task task){
         if (task.getType() == EntryType.EVENT) {
             task.setEndDate(taskDatePicker.getValue());
@@ -207,8 +267,15 @@ public class DayView extends VBox {
         taskColorBox.setValue(null);
         taskDatePicker.setValue(null);
         eventStartDatePicker.setValue(null);
+        eventHasTimeCheckBox.setSelected(false);
+        eventStartHourSpinner.setDisable(true);
+        eventStartMinuteSpinner.setDisable(true);
+        eventEndHourSpinner.setDisable(true);
+        eventEndMinuteSpinner.setDisable(true);
         eventStartHourSpinner.getValueFactory().setValue(12);
         eventStartMinuteSpinner.getValueFactory().setValue(0);
+        eventEndHourSpinner.getValueFactory().setValue(13);
+        eventEndMinuteSpinner.getValueFactory().setValue(0);
         addTaskButton.setText("Dodaj");
     }
 
@@ -220,9 +287,21 @@ public class DayView extends VBox {
         taskDatePicker.setValue(task.getType() == EntryType.EVENT ? task.getEndDate() : task.getDeadline());
         if (task.getType() == EntryType.EVENT) {
             eventStartDatePicker.setValue(task.getDate());
-            LocalTime time = task.getTime() != null ? task.getTime() : LocalTime.of(12, 0);
+
+            boolean hasTime = task.getTime() != null;
+            eventHasTimeCheckBox.setSelected(hasTime);
+            eventStartHourSpinner.setDisable(!hasTime);
+            eventStartMinuteSpinner.setDisable(!hasTime);
+            eventEndHourSpinner.setDisable(!hasTime);
+            eventEndMinuteSpinner.setDisable(!hasTime);
+
+            LocalTime time = hasTime ? task.getTime() : LocalTime.of(12, 0);
             eventStartHourSpinner.getValueFactory().setValue(time.getHour());
             eventStartMinuteSpinner.getValueFactory().setValue(time.getMinute());
+
+            LocalTime endTimeValue = task.getEndTime() != null ? task.getEndTime() : time.plusHours(1);
+            eventEndHourSpinner.getValueFactory().setValue(endTimeValue.getHour());
+            eventEndMinuteSpinner.getValueFactory().setValue(endTimeValue.getMinute());
         }
         addTaskButton.setText("Zapisz");
     }
@@ -283,7 +362,16 @@ public class DayView extends VBox {
             }
 
             String prefix = task.getType() == EntryType.EVENT ? "★ " : "";
-            Text taskLabel = new Text(prefix + task.getTitle());
+            String timeText = "";
+            if (task.getTime() != null) {
+                DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("HH:mm");
+                timeText = task.getTime().format(timeFormat);
+                if (task.getEndTime() != null) {
+                    timeText += "-" + task.getEndTime().format(timeFormat);
+                }
+                timeText += " ";
+            }
+            Text taskLabel = new Text(prefix + timeText + task.getTitle());
             if (task.isDone()) {
                 taskLabel.setStrikethrough(true);
                 taskLabel.setFill(Color.web("#999999"));

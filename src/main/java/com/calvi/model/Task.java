@@ -10,6 +10,7 @@ public class Task {
     private String title;
     private LocalDate date;
     private LocalTime time;
+    private LocalTime endTime; //godzina zakończenia wydarzenia (opcjonalna, tylko gdy jest time)
     private String desc;
     private boolean done = false;
     private Duration duration;
@@ -59,6 +60,10 @@ public class Task {
         return time;
     }
 
+    public LocalTime getEndTime() {
+        return endTime;
+    }
+
     public String getTitle() {
         return title;
     }
@@ -97,6 +102,10 @@ public class Task {
 
     public void setTime(LocalTime time) {
         this.time = time;
+    }
+
+    public void setEndTime(LocalTime endTime) {
+        this.endTime = endTime;
     }
 
     public void setDesc(String desc) {
