@@ -3,3 +3,6 @@ target/
 *.iml
 .vscode/
 notes/
+
+
+data/calvi-data.json
