@@ -40,6 +40,8 @@ public class TopBar extends HBox {
             // liczony niżej ręcznie na mysz) ma być nieaktywna
             settingsButton.setDisable(locked);
             closeButton.setDisable(locked);
+            // całe okno robi się półprzezroczyste - widać przez nie tło, ale treść wciąż da się przeczytać
+            stage.setOpacity(locked ? 0.75 : 1.0);
             if (onLockChanged != null) {
                 onLockChanged.accept(locked);
             }
