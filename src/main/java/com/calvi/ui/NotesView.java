@@ -46,6 +46,7 @@ public class NotesView extends VBox {
         setSpacing(6);
         setPadding(new Insets(12));
         setPrefWidth(250);
+        setMaxWidth(250); // bez tego długi, niezawijalny tekst (np. tytuł notatki) rozpychał cały panel
         setStyle("-fx-background-color: white; -fx-border-color: #cccccc;");
 
         Button toggleAddButton = new Button("+ Dodaj notatkę");
@@ -247,6 +248,7 @@ public class NotesView extends VBox {
 
             Label titleLabel = new Label(note.getTitle());
             titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 13));
+            titleLabel.setWrapText(true);
 
             Label contentLabel = new Label(truncate(note.getContent(), PREVIEW_LENGTH));
             contentLabel.setFont(Font.font("Arial", 11));

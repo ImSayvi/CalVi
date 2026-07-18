@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import com.calvi.model.DailyTask;
 import com.calvi.model.EntryType;
 import com.calvi.model.Task;
 import com.calvi.model.TaskColor;
@@ -36,10 +37,13 @@ import javafx.scene.text.Text;
 public class DayView extends VBox {
     private LocalDate shownDate;
     private List<Task> tasks;
+    private List<DailyTask> dailyTasks;
     private Task editingTask;
     private Label dayNameLabel = new Label();
     private Label dateLabel = new Label();
     private VBox taskListBox = new VBox(4);
+    private VBox dailyTasksListBox = new VBox(4);
+    private TextField newDailyTaskField;
     private TextField taskTitleField;
     private ComboBox<EntryType> taskTypeBox;
     private ComboBox<TaskColor> taskColorBox;
@@ -55,8 +59,9 @@ public class DayView extends VBox {
     private Button addTaskButton;
     private Runnable onDataChanged;
 
-    public DayView(List<Task> tasks) {
+    public DayView(List<Task> tasks, List<DailyTask> dailyTasks) {
         this.tasks = tasks;
+        this.dailyTasks = dailyTasks;
 
         setPrefWidth(250);
         setAlignment(Pos.TOP_CENTER);
@@ -223,7 +228,33 @@ public class DayView extends VBox {
             addTaskBox.setManaged(true);
         });
 
-        getChildren().addAll(dayNameLabel, dateLabel, new Separator(), taskListBox, new Separator(), toggleAddTaskButton, addTaskBox);
+        Label dailyTasksHeader = new Label("Zadania dzienne");
+        dailyTasksHeader.setFont(Font.font("Arial", FontWeight.BOLD, 13));
+
+        newDailyTaskField = new TextField();
+        newDailyTaskField.setPromptText("np. leki, ćwiczenia");
+        newDailyTaskField.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(newDailyTaskField, Priority.ALWAYS);
+
+        Button addDailyTaskButton = new Button("+ Dodaj");
+        addDailyTaskButton.setOnAction(event -> {
+            String title = newDailyTaskField.getText().trim();
+            if (!title.isEmpty()) {
+                dailyTasks.add(new DailyTask(title));
+                newDailyTaskField.clear();
+                refreshDailyTasks();
+                if (onDataChanged != null) {
+                    onDataChanged.run();
+                }
+            }
+        });
+
+        HBox newDailyTaskRow = new HBox(6, newDailyTaskField, addDailyTaskButton);
+
+        getChildren().addAll(
+                dayNameLabel, dateLabel, new Separator(), taskListBox, new Separator(), toggleAddTaskButton, addTaskBox,
+                new Separator(), dailyTasksHeader, dailyTasksListBox, newDailyTaskRow
+        );
         showDate(LocalDate.now());
     }
 
@@ -345,10 +376,69 @@ public class DayView extends VBox {
 
         String monthName = date.getMonth().getDisplayName(TextStyle.FULL, new Locale("pl"));
 
-        dayNameLabel.setText(prettyDayName);
+        boolean isToday = date.equals(LocalDate.now());
+        dayNameLabel.setText(isToday ? prettyDayName + " (dziś)" : prettyDayName);
+        dayNameLabel.setStyle(isToday ? "-fx-text-fill: #e91e8c;" : "-fx-text-fill: black;");
         dateLabel.setText(date.getDayOfMonth() + " " + monthName + " " + date.getYear());
 
         refreshTasks();
+        refreshDailyTasks();
+    }
+
+    private void refreshDailyTasks(){
+        dailyTasksListBox.getChildren().clear();
+
+        if (dailyTasks.isEmpty()) {
+            Label emptyLabel = new Label("Brak zadań dziennych");
+            emptyLabel.setStyle("-fx-text-fill: #aaaaaa;");
+            dailyTasksListBox.getChildren().add(emptyLabel);
+            return;
+        }
+
+        // dailyTask.isDone() nie ma daty - to jeden wspólny stan "na dziś", resetowany raz dziennie
+        // (patrz Main.start()), więc odznaczanie ma sens tylko w widoku aktualnego dnia
+        boolean isToday = shownDate.equals(LocalDate.now());
+
+        for (DailyTask dailyTask : dailyTasks) {
+            ToggleSwitch toggle = new ToggleSwitch(dailyTask.isDone());
+            toggle.setDisable(!isToday);
+            toggle.setOpacity(isToday ? 1.0 : 0.4);
+            toggle.setOnToggle(selected -> {
+                dailyTask.setDone(selected);
+                if (onDataChanged != null) {
+                    onDataChanged.run();
+                }
+            });
+
+            Text titleText = new Text(dailyTask.getTitle());
+
+            Region rowSpacer = new Region();
+            HBox.setHgrow(rowSpacer, Priority.ALWAYS);
+
+            Button deleteButton = new Button("✕");
+            deleteButton.setTooltip(new Tooltip("Usuń"));
+            deleteButton.setStyle(
+                    "-fx-background-color: #e74c3c;" +
+                    "-fx-text-fill: white;" +
+                    "-fx-background-radius: 50%;" +
+                    "-fx-min-width: 18px; -fx-min-height: 18px;" +
+                    "-fx-max-width: 18px; -fx-max-height: 18px;" +
+                    "-fx-padding: 0;" +
+                    "-fx-font-size: 10px;" +
+                    "-fx-cursor: hand;"
+            );
+            deleteButton.setOnAction(event -> {
+                dailyTasks.remove(dailyTask);
+                refreshDailyTasks();
+                if (onDataChanged != null) {
+                    onDataChanged.run();
+                }
+            });
+
+            HBox row = new HBox(8, toggle, titleText, rowSpacer, deleteButton);
+            row.setAlignment(Pos.CENTER_LEFT);
+            dailyTasksListBox.getChildren().add(row);
+        }
     }
 
     private void refreshTasks(){

@@ -1,6 +1,8 @@
 package com.calvi;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.util.Locale;
 
 import javafx.application.Application;
 import javafx.stage.Stage;
@@ -12,6 +14,7 @@ import javafx.scene.layout.StackPane;
 
 import com.calvi.data.AppData;
 import com.calvi.data.DataStore;
+import com.calvi.model.DailyTask;
 import com.calvi.ui.DayView;
 import com.calvi.ui.MonthView;
 import com.calvi.ui.NotesView;
@@ -21,6 +24,10 @@ import com.calvi.ui.WeekView;
 
 public class Main extends Application{
     public static void main(String[] args) {
+        // domyślne locale JVM steruje też wbudowanymi kontrolkami JavaFX (np. wyskakującym
+        // kalendarzem DatePickera) - nasze własne new Locale("pl") w kodzie na to nie wpływa,
+        // trzeba nadpisać to ustawienie globalnie, zanim cokolwiek z JavaFX się zbuduje
+        Locale.setDefault(new Locale("pl", "PL"));
         launch(args);
     }
 
@@ -36,10 +43,20 @@ public class Main extends Application{
         }
         final AppData appData = loadedData;
 
+        // zadania dzienne mają się odhaczać na nowo każdego dnia - jeśli od ostatniego
+        // uruchomienia minął dzień, zerujemy je tutaj, zamiast trzymać osobny wpis na każdy dzień w historii
+        LocalDate today = LocalDate.now();
+        if (!today.equals(appData.getLastDailyReset())) {
+            for (DailyTask dailyTask : appData.getDailyTasks()) {
+                dailyTask.setDone(false);
+            }
+            appData.setLastDailyReset(today);
+        }
+
         BorderPane content = new BorderPane();
 
-        MonthView monthsPane = new MonthView(appData.getTasks());
-        DayView dayPane = new DayView(appData.getTasks());
+        MonthView monthsPane = new MonthView(appData.getTasks(), appData.getDailyTasks());
+        DayView dayPane = new DayView(appData.getTasks(), appData.getDailyTasks());
         NotesView notesPane = new NotesView(appData.getNotes());
         WeekView weekPane = new WeekView();
 

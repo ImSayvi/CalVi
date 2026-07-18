@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
 
+import com.calvi.model.DailyTask;
 import com.calvi.model.Task;
 import com.calvi.model.TaskColor;
 
@@ -32,10 +33,12 @@ public class MonthView extends GridPane {
 
     private YearMonth currentMonth = YearMonth.now();
     private List<Task> tasks;
+    private List<DailyTask> dailyTasks;
     private Consumer<LocalDate> onDaySelected;
 
-    public MonthView(List<Task> tasks){
+    public MonthView(List<Task> tasks, List<DailyTask> dailyTasks){
         this.tasks = tasks;
+        this.dailyTasks = dailyTasks;
 
         setStyle("-fx-background-color: white; -fx-border-color: #cccccc;");
 
@@ -115,8 +118,9 @@ public class MonthView extends GridPane {
             VBox dayBox = new VBox();
             dayBox.setAlignment(Pos.TOP_CENTER);
             dayBox.setPadding(new Insets(6));
-            dayBox.setStyle("-fx-border-color: lightgray;");
 
+            String borderColor = "lightgray";
+            String borderWidth = "1px";
 
             //tu robię że kafelki reagują na klikniecie (tylko dla dni należących do currentMonth -
             //dla dni z sąsiednich miesięcy currentMonth.atDay(dayNumber) mógłby rzucić wyjątek,
@@ -154,6 +158,28 @@ public class MonthView extends GridPane {
                         dayBox.getChildren().add(chip);
                     }
                 }
+
+                // dailyTask.isDone() to jeden wspólny stan "na dziś" (patrz Main.start()), bez historii po datach,
+                // więc kolorowa ramka ma sens tylko na komórce dzisiejszego dnia
+                if (!dailyTasks.isEmpty() && cellDate.equals(LocalDate.now())) {
+                    int completedCount = 0;
+                    for (DailyTask dailyTask : dailyTasks) {
+                        if (dailyTask.isDone()) {
+                            completedCount++;
+                        }
+                    }
+
+                    if (completedCount == 0) {
+                        borderColor = "#e74c3c"; // nic nieodhaczone
+                    } else if (completedCount == dailyTasks.size()) {
+                        borderColor = "#4caf82"; // wszystko odhaczone
+                    } else if (completedCount * 2 >= dailyTasks.size()) {
+                        borderColor = "#e6a23c"; // przynajmniej połowa
+                    } else {
+                        borderColor = "#e74c3c";
+                    }
+                    borderWidth = "2px";
+                }
             }
 
 
@@ -165,9 +191,23 @@ public class MonthView extends GridPane {
 
 
 
-            if(inCurrentMonth && isCurrentMonthShown && dayNumber == todaysDay){
-                dayBox.setStyle("-fx-background-color: #f5eeef;");
+            // col 5 = Sob, col 6 = Nd (patrz kolejność w days[] w buildHeader)
+            boolean isWeekend = col == 5 || col == 6;
+            boolean isTodayCell = inCurrentMonth && isCurrentMonthShown && dayNumber == todaysDay;
+
+            String backgroundColor = "white";
+            if (isWeekend) {
+                backgroundColor = "#e6e6e6";
             }
+            if (isTodayCell) {
+                backgroundColor = "#f28ab2";
+            }
+            dayBox.setStyle(
+                    "-fx-border-color: " + borderColor + ";" +
+                    "-fx-border-width: " + borderWidth + ";" +
+                    "-fx-background-color: " + backgroundColor + ";"
+            );
+
             dayBox.getChildren().add(0, dayNum);
 
             monthGrid.add(dayBox, col, row);
