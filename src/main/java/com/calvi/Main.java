@@ -58,7 +58,7 @@ public class Main extends Application{
         MonthView monthsPane = new MonthView(appData.getTasks(), appData.getDailyTasks());
         DayView dayPane = new DayView(appData.getTasks(), appData.getDailyTasks());
         NotesView notesPane = new NotesView(appData.getNotes());
-        WeekView weekPane = new WeekView();
+        WeekView weekPane = new WeekView(appData.getTasks());
 
         monthsPane.setOnDaySelected(date -> dayPane.showDate(date));
         weekPane.setOnDaySelected(date -> dayPane.showDate(date));
@@ -78,6 +78,7 @@ public class Main extends Application{
                 e.printStackTrace();
             }
             monthsPane.refresh();
+            weekPane.refresh();
         });
 
         content.setLeft(notesPane);
