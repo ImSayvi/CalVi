@@ -58,7 +58,7 @@ public class Main extends Application{
         MonthView monthsPane = new MonthView(appData.getTasks(), appData.getDailyTasks());
         DayView dayPane = new DayView(appData.getTasks(), appData.getDailyTasks());
         NotesView notesPane = new NotesView(appData.getNotes());
-        WeekView weekPane = new WeekView(appData.getTasks());
+        WeekView weekPane = new WeekView(appData.getTasks(), appData.getWeatherLocation());
 
         monthsPane.setOnDaySelected(date -> dayPane.showDate(date));
         weekPane.setOnDaySelected(date -> dayPane.showDate(date));
@@ -96,8 +96,16 @@ public class Main extends Application{
         lockOverlay.prefWidthProperty().bind(contentStack.widthProperty());
         lockOverlay.prefHeightProperty().bind(contentStack.heightProperty());
 
-        TopBar topBar = new TopBar(stage);
+        TopBar topBar = new TopBar(stage, appData.getWeatherLocation());
         topBar.setOnLockChanged(locked -> lockOverlay.setMouseTransparent(!locked));
+        topBar.setOnDataChanged(() -> {
+            try {
+                DataStore.save(appData);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        topBar.setOnWeatherLocationChanged(weekPane::refreshWeather);
 
         BorderPane root = new BorderPane();
         root.setTop(topBar);

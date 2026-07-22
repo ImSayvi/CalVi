@@ -7,15 +7,21 @@ import java.util.List;
 import com.calvi.model.DailyTask;
 import com.calvi.model.Note;
 import com.calvi.model.Task;
+import com.calvi.model.WeatherLocation;
 
 public class AppData {
     private List<Note> notes = new ArrayList<>();
     private List<Task> tasks = new ArrayList<>();
     private List<DailyTask> dailyTasks = new ArrayList<>();
     private LocalDate lastDailyReset; // ostatni dzień, dla którego wyzerowano zadania dzienne - patrz Main.start()
+    private WeatherLocation weatherLocation = new WeatherLocation();
 
     public void setNotes(List<Note> notes) {
         this.notes = notes;
+    }
+
+    public void setWeatherLocation(WeatherLocation weatherLocation) {
+        this.weatherLocation = weatherLocation;
     }
 
     public void setTasks(List<Task> tasks) {
@@ -44,6 +50,10 @@ public class AppData {
 
     public LocalDate getLastDailyReset() {
         return lastDailyReset;
+    }
+
+    public WeatherLocation getWeatherLocation() {
+        return weatherLocation;
     }
 
 }
