@@ -94,6 +94,18 @@ public class WeatherService {
         return "🌡️";
     }
 
+    // te same przedziały co iconForCode() - opis pod tooltip do ikonki, żeby wiadomo było co ona znaczy
+    public static String descriptionForCode(int weatherCode) {
+        if (weatherCode == 0) return "Bezchmurnie";
+        if (weatherCode <= 3) return "Częściowe zachmurzenie";
+        if (weatherCode == 45 || weatherCode == 48) return "Mgła";
+        if (weatherCode >= 51 && weatherCode <= 67) return "Deszczowo";
+        if (weatherCode >= 71 && weatherCode <= 77) return "Śnieg";
+        if (weatherCode >= 80 && weatherCode <= 82) return "Przelotne opady";
+        if (weatherCode >= 95) return "Burza";
+        return "Pogoda";
+    }
+
     private static JsonNode get(String url) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder(URI.create(url)).GET().build();
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());

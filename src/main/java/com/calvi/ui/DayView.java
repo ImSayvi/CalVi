@@ -416,11 +416,13 @@ public class DayView extends VBox {
         // "Segoe UI Emoji" zamiast Arial na samych ikonkach - patrz notes/pogoda-api.md, dlaczego
         Label sunriseIcon = new Label("🌅");
         sunriseIcon.setFont(Font.font("Segoe UI Emoji", 13));
+        Tooltip.install(sunriseIcon, new Tooltip("Wschód słońca"));
         Label sunriseTime = new Label(sunTimes.sunrise().format(timeFormat));
         sunriseTime.setFont(Font.font("Arial", 11));
 
         Label sunsetIcon = new Label("🌇");
         sunsetIcon.setFont(Font.font("Segoe UI Emoji", 13));
+        Tooltip.install(sunsetIcon, new Tooltip("Zachód słońca"));
         Label sunsetTime = new Label(sunTimes.sunset().format(timeFormat));
         sunsetTime.setFont(Font.font("Arial", 11));
 

@@ -167,6 +167,7 @@ public class WeekView extends BorderPane {
                 // kompletu glifów emoji, więc któryś kod pogody potrafił pokazać się jako pusty kwadrat
                 Label iconLabel = new Label(WeatherService.iconForCode(weather.weatherCode()));
                 iconLabel.setFont(Font.font("Segoe UI Emoji", 16));
+                Tooltip.install(iconLabel, new Tooltip(WeatherService.descriptionForCode(weather.weatherCode())));
 
                 // strzałki zamiast gołego "22/11" - bez nich nie było widać, który to max, a który min
                 Label tempLabel = new Label("↑" + tempMax + "° ↓" + tempMin + "°");
