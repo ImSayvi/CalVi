@@ -4,14 +4,20 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import com.calvi.model.DailyTask;
 import com.calvi.model.EntryType;
 import com.calvi.model.Task;
 import com.calvi.model.TaskColor;
+import com.calvi.model.WeatherLocation;
+import com.calvi.weather.SunTimes;
+import com.calvi.weather.WeatherService;
 
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -41,6 +47,9 @@ public class DayView extends VBox {
     private Task editingTask;
     private Label dayNameLabel = new Label();
     private Label dateLabel = new Label();
+    private HBox sunRow = new HBox(4);
+    private WeatherLocation weatherLocation;
+    private Map<LocalDate, SunTimes> sunTimesByDate = new HashMap<>();
     private VBox taskListBox = new VBox(4);
     private VBox dailyTasksListBox = new VBox(4);
     private TextField newDailyTaskField;
@@ -59,9 +68,10 @@ public class DayView extends VBox {
     private Button addTaskButton;
     private Runnable onDataChanged;
 
-    public DayView(List<Task> tasks, List<DailyTask> dailyTasks) {
+    public DayView(List<Task> tasks, List<DailyTask> dailyTasks, WeatherLocation weatherLocation) {
         this.tasks = tasks;
         this.dailyTasks = dailyTasks;
+        this.weatherLocation = weatherLocation;
 
         setPrefWidth(250);
         setAlignment(Pos.TOP_CENTER);
@@ -72,6 +82,7 @@ public class DayView extends VBox {
         dayNameLabel.setFont(Font.font("Arial", FontWeight.BOLD, 18));
         dateLabel.setFont(Font.font("Arial", 13));
         dateLabel.setStyle("-fx-text-fill: #888888;");
+        sunRow.setAlignment(Pos.CENTER);
 
         taskTitleField = new TextField();
         taskTitleField.setPromptText("Nowe zadanie");
@@ -252,10 +263,11 @@ public class DayView extends VBox {
         HBox newDailyTaskRow = new HBox(6, newDailyTaskField, addDailyTaskButton);
 
         getChildren().addAll(
-                dayNameLabel, dateLabel, new Separator(), taskListBox, new Separator(), toggleAddTaskButton, addTaskBox,
+                dayNameLabel, dateLabel, sunRow, new Separator(), taskListBox, new Separator(), toggleAddTaskButton, addTaskBox,
                 new Separator(), dailyTasksHeader, dailyTasksListBox, newDailyTaskRow
         );
         showDate(LocalDate.now());
+        refreshSunTimes();
     }
 
     private ListCell<TaskColor> createColorSwatchCell(){
@@ -381,8 +393,57 @@ public class DayView extends VBox {
         dayNameLabel.setStyle(isToday ? "-fx-text-fill: #e91e8c;" : "-fx-text-fill: black;");
         dateLabel.setText(date.getDayOfMonth() + " " + monthName + " " + date.getYear());
 
+        updateSunRow(date);
         refreshTasks();
         refreshDailyTasks();
+    }
+
+    private void updateSunRow(LocalDate date){
+        sunRow.getChildren().clear();
+
+        SunTimes sunTimes = sunTimesByDate.get(date);
+        if (sunTimes == null) {
+            // dzień poza zasięgiem prognozy Open-Meteo (zbyt odległa przeszłość/przyszłość) - nic nie pokazujemy
+            sunRow.setVisible(false);
+            sunRow.setManaged(false);
+            return;
+        }
+        sunRow.setVisible(true);
+        sunRow.setManaged(true);
+
+        DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("HH:mm");
+
+        // "Segoe UI Emoji" zamiast Arial na samych ikonkach - patrz notes/pogoda-api.md, dlaczego
+        Label sunriseIcon = new Label("🌅");
+        sunriseIcon.setFont(Font.font("Segoe UI Emoji", 13));
+        Label sunriseTime = new Label(sunTimes.sunrise().format(timeFormat));
+        sunriseTime.setFont(Font.font("Arial", 11));
+
+        Label sunsetIcon = new Label("🌇");
+        sunsetIcon.setFont(Font.font("Segoe UI Emoji", 13));
+        Label sunsetTime = new Label(sunTimes.sunset().format(timeFormat));
+        sunsetTime.setFont(Font.font("Arial", 11));
+
+        sunRow.getChildren().addAll(sunriseIcon, sunriseTime, sunsetIcon, sunsetTime);
+    }
+
+    // wywoływane też z zewnątrz (Main/TopBar) po zmianie miasta w ustawieniach - pobiera
+    // wschody/zachody w tle (sieć nie może blokować wątku FX) i wraca na wątek FX, żeby odświeżyć widok
+    public void refreshSunTimes(){
+        double latitude = weatherLocation.getLatitude();
+        double longitude = weatherLocation.getLongitude();
+
+        new Thread(() -> {
+            try {
+                Map<LocalDate, SunTimes> result = WeatherService.fetchSunTimes(latitude, longitude);
+                Platform.runLater(() -> {
+                    sunTimesByDate = result;
+                    updateSunRow(shownDate);
+                });
+            } catch (Exception e) {
+                e.printStackTrace(); // brak neta/błąd API - po prostu zostajemy bez wschodu/zachodu, nie wywalamy apki
+            }
+        }).start();
     }
 
     private void refreshDailyTasks(){

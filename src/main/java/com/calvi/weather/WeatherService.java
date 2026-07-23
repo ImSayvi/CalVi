@@ -8,8 +8,11 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -53,6 +56,30 @@ public class WeatherService {
             ));
         }
         return forecast;
+    }
+
+    // osobne od fetchForecast() - widok dnia potrzebuje tylko wschodu/zachodu, bez śmiecenia
+    // widoku tygodnia dodatkowymi polami, których i tak by nie pokazywał
+    public static Map<LocalDate, SunTimes> fetchSunTimes(double latitude, double longitude) throws IOException, InterruptedException {
+        String url = "https://api.open-meteo.com/v1/forecast?latitude=" + latitude + "&longitude=" + longitude
+                + "&daily=sunrise,sunset&timezone=auto";
+
+        JsonNode daily = get(url).get("daily");
+        JsonNode dates = daily.get("time");
+        JsonNode sunrises = daily.get("sunrise");
+        JsonNode sunsets = daily.get("sunset");
+
+        Map<LocalDate, SunTimes> sunTimesByDate = new HashMap<>();
+        for (int i = 0; i < dates.size(); i++) {
+            LocalDate date = LocalDate.parse(dates.get(i).asText());
+            // "timezone=auto" - Open-Meteo już zwraca to w czasie lokalnym, bez przesunięcia strefy w stringu
+            sunTimesByDate.put(date, new SunTimes(
+                    date,
+                    LocalDateTime.parse(sunrises.get(i).asText()).toLocalTime(),
+                    LocalDateTime.parse(sunsets.get(i).asText()).toLocalTime()
+            ));
+        }
+        return sunTimesByDate;
     }
 
     // WMO weather code -> emoji, patrz https://open-meteo.com/en/docs (tabela "WMO Weather interpretation codes")

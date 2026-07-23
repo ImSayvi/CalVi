@@ -56,7 +56,7 @@ public class Main extends Application{
         BorderPane content = new BorderPane();
 
         MonthView monthsPane = new MonthView(appData.getTasks(), appData.getDailyTasks());
-        DayView dayPane = new DayView(appData.getTasks(), appData.getDailyTasks());
+        DayView dayPane = new DayView(appData.getTasks(), appData.getDailyTasks(), appData.getWeatherLocation());
         NotesView notesPane = new NotesView(appData.getNotes());
         WeekView weekPane = new WeekView(appData.getTasks(), appData.getWeatherLocation());
 
@@ -105,7 +105,10 @@ public class Main extends Application{
                 e.printStackTrace();
             }
         });
-        topBar.setOnWeatherLocationChanged(weekPane::refreshWeather);
+        topBar.setOnWeatherLocationChanged(() -> {
+            weekPane.refreshWeather();
+            dayPane.refreshSunTimes();
+        });
 
         BorderPane root = new BorderPane();
         root.setTop(topBar);
